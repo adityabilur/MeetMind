@@ -1,0 +1,8 @@
+streamlit
+openai-whisper
+yt-dlp
+google-genai
+python-dotenv
+chromadb
+sentence-transformers
+reportlab
