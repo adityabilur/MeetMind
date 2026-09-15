@@ -1,8 +1,13 @@
+import os
+import uuid
 import yt_dlp
 
 
 def download_youtube_video(url):
-    output_path = "data/input/youtube_audio.%(ext)s"
+    os.makedirs("data/input", exist_ok=True)
+
+    file_id = uuid.uuid4().hex
+    output_path = f"data/input/youtube_{file_id}.%(ext)s"
 
     options = {
         "format": "bestaudio/best",
