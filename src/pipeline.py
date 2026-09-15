@@ -11,7 +11,8 @@ def process_input(input_value, input_type):
     # -----------------------------
     # Step 1: Get the audio/media
     # -----------------------------
-
+    os.makedirs("data/input", exist_ok=True)
+    os.makedirs("data/output", exist_ok=True)
     if input_type == "youtube":
 
         print("Downloading YouTube audio...")
