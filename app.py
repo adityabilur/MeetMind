@@ -2,6 +2,7 @@ import streamlit as st
 import os
 import uuid
 
+
 from src.pipeline import process_input
 from src.summarizer import summarize_meeting
 from src.rag_pipeline import answer_question
@@ -40,9 +41,6 @@ st.html(
         padding-bottom: 4rem;
     }
 
-    /* Streamlit's own top toolbar is fixed/overlaid — the extra
-       block-container padding above clears it so the hero icon
-       and title are never rendered underneath it. */
     header[data-testid="stHeader"] {
         background: transparent;
     }
@@ -51,6 +49,7 @@ st.html(
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI",
             Inter, Roboto, Helvetica, Arial, sans-serif;
     }
+
 
     /* ---------- Sidebar ---------- */
 
@@ -146,6 +145,7 @@ st.html(
         color: #b7bacb;
     }
 
+
     /* ---------- Header ---------- */
 
     .mm-header {
@@ -200,6 +200,7 @@ st.html(
         font-size: 22px;
     }
 
+
     /* ---------- Feature cards ---------- */
 
     .feature-card {
@@ -237,6 +238,7 @@ st.html(
         line-height: 1.35;
     }
 
+
     /* ---------- Section titles ---------- */
 
     .section-title {
@@ -255,6 +257,7 @@ st.html(
         margin-bottom: 0.9rem;
     }
 
+
     /* ---------- Input card ---------- */
 
     .mm-card {
@@ -265,6 +268,7 @@ st.html(
         box-shadow: 0 2px 10px rgba(20, 21, 31, 0.03);
         margin-bottom: 1.1rem;
     }
+
 
     /* ---------- Buttons ---------- */
 
@@ -291,7 +295,6 @@ st.html(
         font-weight: 650;
     }
 
-    div[data-testid="stFormSubmitButton"] button,
     .mm-primary-btn button {
         background: linear-gradient(135deg, #7c5cff, #6d5bd0) !important;
         color: white !important;
@@ -303,7 +306,8 @@ st.html(
         color: white !important;
     }
 
-    /* ---------- Toggle tabs (upload / youtube) ---------- */
+
+    /* ---------- Toggle tabs ---------- */
 
     .mm-toggle-active button {
         background: #191a24 !important;
@@ -317,6 +321,7 @@ st.html(
         border: 1px solid #e8e9f2 !important;
     }
 
+
     /* ---------- File uploader ---------- */
 
     [data-testid="stFileUploader"] {
@@ -326,11 +331,13 @@ st.html(
         padding: 0.4rem;
     }
 
+
     /* ---------- Chat bubbles ---------- */
 
     .stChatMessage {
         border-radius: 14px;
     }
+
 
     /* ---------- Status pill ---------- */
 
@@ -354,6 +361,7 @@ st.html(
         border: 1px solid #c8f2dc;
     }
 
+
     /* ---------- Insight cards ---------- */
 
     .insight-card {
@@ -371,6 +379,7 @@ st.html(
         color: #191a24;
         margin-bottom: 0.4rem;
     }
+
 
     /* ---------- Footer ---------- */
 
@@ -399,6 +408,13 @@ if "session_order" not in st.session_state:
 if "current_session_id" not in st.session_state:
     st.session_state.current_session_id = None
 
+if "input_mode" not in st.session_state:
+    st.session_state.input_mode = "Upload File"
+
+
+# ============================================================
+# SESSION HELPERS
+# ============================================================
 
 def _new_session_id():
     return str(uuid.uuid4())
@@ -406,13 +422,17 @@ def _new_session_id():
 
 def _get_current_session():
     sid = st.session_state.current_session_id
+
     if sid and sid in st.session_state.sessions:
         return st.session_state.sessions[sid]
+
     return None
 
 
 def _create_session(title, source_type):
+
     sid = _new_session_id()
+
     st.session_state.sessions[sid] = {
         "id": sid,
         "title": title,
@@ -421,15 +441,17 @@ def _create_session(title, source_type):
         "analysis": None,
         "transcript_path": None,
         "chat_history": [],
-        "pdf_data": None,
+        "pdf_data": None
     }
+
     st.session_state.session_order.insert(0, sid)
     st.session_state.current_session_id = sid
+
     return st.session_state.sessions[sid]
 
 
 # ============================================================
-# SIDEBAR — CHAT / ANALYSIS HISTORY
+# SIDEBAR
 # ============================================================
 
 with st.sidebar:
@@ -443,15 +465,31 @@ with st.sidebar:
         """
     )
 
-    st.markdown('<div class="new-analysis-btn">', unsafe_allow_html=True)
+    st.markdown(
+        '<div class="new-analysis-btn">',
+        unsafe_allow_html=True
+    )
 
-    if st.button("＋  New Analysis", key="new_analysis_btn"):
+    if st.button(
+        "＋  New Analysis",
+        key="new_analysis_btn"
+    ):
+
         st.session_state.current_session_id = None
+
+        # Reset input mode whenever a new analysis starts.
+        st.session_state.input_mode = "Upload File"
+
         st.rerun()
 
-    st.markdown('</div>', unsafe_allow_html=True)
+    st.markdown(
+        "</div>",
+        unsafe_allow_html=True
+    )
 
-    st.html('<div class="sidebar-section-label">Recent Analyses</div>')
+    st.html(
+        '<div class="sidebar-section-label">Recent Analyses</div>'
+    )
 
     if not st.session_state.session_order:
 
@@ -459,7 +497,7 @@ with st.sidebar:
             """
             <div class="sidebar-empty">
                 No analyses yet.<br>
-                Process a meeting or YouTube video to get started.
+                Process a media file or YouTube video to get started.
             </div>
             """
         )
@@ -475,9 +513,17 @@ with st.sidebar:
 
             is_active = sid == st.session_state.current_session_id
 
-            icon = "🎥" if session["source_type"] == "youtube" else "📝"
+            icon = (
+                "🎥"
+                if session["source_type"] == "youtube"
+                else "📝"
+            )
 
-            wrapper_class = "session-active" if is_active else ""
+            wrapper_class = (
+                "session-active"
+                if is_active
+                else ""
+            )
 
             st.markdown(
                 f'<div class="{wrapper_class}">',
@@ -488,10 +534,14 @@ with st.sidebar:
                 f"{icon}  {session['title']}",
                 key=f"session_btn_{sid}"
             ):
+
                 st.session_state.current_session_id = sid
                 st.rerun()
 
-            st.markdown('</div>', unsafe_allow_html=True)
+            st.markdown(
+                "</div>",
+                unsafe_allow_html=True
+            )
 
     st.html(
         """
@@ -512,7 +562,7 @@ current_session = _get_current_session()
 if current_session and current_session.get("transcript"):
 
     st.html(
-        f"""
+        """
         <div class="mm-header-compact">
             <div class="mm-header-badge">🧠</div>
             <div class="mm-header-title">MeetMind</div>
@@ -527,8 +577,9 @@ else:
         <div class="mm-header">
             <div class="mm-header-badge">🧠</div>
             <div class="mm-header-title">MeetMind</div>
-            <div class="mm-header-subtitle">AI Audio & Video Intelligence Assistant
-</div>
+            <div class="mm-header-subtitle">
+                AI Audio & Video Intelligence Assistant
+            </div>
             <div class="mm-header-tagline">
                 Turn conversations into searchable insights,
                 summaries, decisions and action items.
@@ -539,7 +590,7 @@ else:
 
 
 # ============================================================
-# FEATURE CARDS (only before a session has results)
+# FEATURE CARDS
 # ============================================================
 
 if not (current_session and current_session.get("transcript")):
@@ -547,6 +598,7 @@ if not (current_session and current_session.get("transcript")):
     col1, col2, col3, col4 = st.columns(4)
 
     with col1:
+
         st.html(
             """
             <div class="feature-card">
@@ -560,6 +612,7 @@ if not (current_session and current_session.get("transcript")):
         )
 
     with col2:
+
         st.html(
             """
             <div class="feature-card">
@@ -573,6 +626,7 @@ if not (current_session and current_session.get("transcript")):
         )
 
     with col3:
+
         st.html(
             """
             <div class="feature-card">
@@ -586,6 +640,7 @@ if not (current_session and current_session.get("transcript")):
         )
 
     with col4:
+
         st.html(
             """
             <div class="feature-card">
@@ -602,135 +657,315 @@ if not (current_session and current_session.get("transcript")):
 
 
 # ============================================================
-# INPUT SECTION (only when no active processed session)
+# INPUT SECTION
 # ============================================================
 
 if not (current_session and current_session.get("transcript")):
-
-    if "input_mode" not in st.session_state:
-        st.session_state.input_mode = "Upload File"
 
     st.html(
         """
         <div class="section-title">🎥 Add your media</div>
         <div class="section-description">
-            Upload a media file or analyze a YouTube video.
+            Upload an audio/video file or analyze a YouTube video.
         </div>
         """
     )
 
-    st.markdown('<div class="mm-card">', unsafe_allow_html=True)
+    st.markdown(
+        '<div class="mm-card">',
+        unsafe_allow_html=True
+    )
+
+
+    # --------------------------------------------------------
+    # INPUT MODE BUTTONS
+    # --------------------------------------------------------
 
     toggle_col1, toggle_col2, spacer = st.columns([1, 1, 3])
 
+
     with toggle_col1:
+
+        upload_active = (
+            st.session_state.input_mode == "Upload File"
+        )
+
         cls = (
             "mm-toggle-active"
-            if st.session_state.input_mode == "Upload File"
+            if upload_active
             else "mm-toggle-inactive"
         )
-        st.markdown(f'<div class="{cls}">', unsafe_allow_html=True)
-        if st.button("🎥 Upload File", key="toggle_upload"):
+
+        st.markdown(
+            f'<div class="{cls}">',
+            unsafe_allow_html=True
+        )
+
+        if st.button(
+            "🎥 Upload File",
+            key="toggle_upload"
+        ):
+
             st.session_state.input_mode = "Upload File"
+
+            # Clear YouTube widget state when switching mode.
+            if "youtube_url_input" in st.session_state:
+                st.session_state.youtube_url_input = ""
+
             st.rerun()
-        st.markdown('</div>', unsafe_allow_html=True)
+
+        st.markdown(
+            "</div>",
+            unsafe_allow_html=True
+        )
+
 
     with toggle_col2:
+
+        youtube_active = (
+            st.session_state.input_mode == "YouTube URL"
+        )
+
         cls = (
             "mm-toggle-active"
-            if st.session_state.input_mode == "YouTube URL"
+            if youtube_active
             else "mm-toggle-inactive"
         )
-        st.markdown(f'<div class="{cls}">', unsafe_allow_html=True)
-        if st.button("🔗 YouTube URL", key="toggle_youtube"):
-            st.session_state.input_mode = "YouTube URL"
-            st.rerun()
-        st.markdown('</div>', unsafe_allow_html=True)
 
-    input_type = st.session_state.input_mode
+        st.markdown(
+            f'<div class="{cls}">',
+            unsafe_allow_html=True
+        )
+
+        if st.button(
+            "🔗 YouTube URL",
+            key="toggle_youtube"
+        ):
+
+            st.session_state.input_mode = "YouTube URL"
+
+            # Clear uploaded-file widget state when switching mode.
+            st.session_state.pop(
+                "uploaded_media",
+                None
+            )
+
+            st.rerun()
+
+        st.markdown(
+            "</div>",
+            unsafe_allow_html=True
+        )
+
 
     st.write("")
 
-    # --------------------------------------------------------
-    # UPLOAD FILE
-    # --------------------------------------------------------
 
-    if input_type == "Upload File":
+    # ========================================================
+    # LOCAL FILE PATH
+    # ========================================================
 
-        st.caption("Upload your audio or video to get started — MP4 • MP3 • WAV")
+    if st.session_state.input_mode == "Upload File":
+
+        st.caption(
+            "Upload your audio or video to get started — MP4 • MP3 • WAV"
+        )
 
         uploaded_file = st.file_uploader(
             "Drop your audio or video here",
             type=["mp4", "mp3", "wav"],
-            label_visibility="collapsed"
+            label_visibility="collapsed",
+            key="uploaded_media"
         )
+
 
         if uploaded_file:
 
-            st.success(f"Selected: {uploaded_file.name}")
+            st.success(
+                f"Selected: {uploaded_file.name}"
+            )
 
-            st.markdown('<div class="mm-primary-btn">', unsafe_allow_html=True)
-            process_clicked = st.button(
+            st.markdown(
+                '<div class="mm-primary-btn">',
+                unsafe_allow_html=True
+            )
+
+            process_file_clicked = st.button(
                 "⚡ Process Media",
                 use_container_width=True,
                 key="process_upload_btn"
             )
-            st.markdown('</div>', unsafe_allow_html=True)
 
-            if process_clicked:
+            st.markdown(
+                "</div>",
+                unsafe_allow_html=True
+            )
+
+
+            if process_file_clicked:
+
+                # ------------------------------------------------
+                # IMPORTANT:
+                # We explicitly force this branch to process a
+                # LOCAL FILE. It can never call the YouTube branch.
+                # ------------------------------------------------
+
+                os.makedirs(
+                    "data/input",
+                    exist_ok=True
+                )
+
+                os.makedirs(
+                    "data/output",
+                    exist_ok=True
+                )
+
+
+                # Use a unique filename so an old file/session
+                # cannot interfere with the current upload.
+
+                extension = os.path.splitext(
+                    uploaded_file.name
+                )[1].lower()
+
+                unique_filename = (
+                    f"uploaded_{uuid.uuid4().hex}{extension}"
+                )
 
                 input_path = os.path.join(
                     "data",
                     "input",
-                    uploaded_file.name
+                    unique_filename
                 )
+
 
                 status_box = st.empty()
 
+
                 try:
 
-                    with open(input_path, "wb") as file:
-                        file.write(uploaded_file.getbuffer())
+                    # Save Streamlit UploadedFile to disk.
 
-                    status_box.html(
-                        '<div class="mm-status">🎙️ Transcribing media...</div>'
-                    )
-
-                    transcript_path = process_input(input_path, "file")
+                    file_bytes = uploaded_file.getvalue()
 
                     with open(
-                        transcript_path, "r", encoding="utf-8"
+                        input_path,
+                        "wb"
                     ) as file:
-                        transcript = file.read()
+
+                        file.write(file_bytes)
+
+
+                    print("\n" + "=" * 60)
+                    print("MEETMIND LOCAL FILE PROCESSING")
+                    print("=" * 60)
+                    print(
+                        "Original file:",
+                        uploaded_file.name
+                    )
+                    print(
+                        "Saved file:",
+                        input_path
+                    )
+                    print(
+                        "Input mode:",
+                        st.session_state.input_mode
+                    )
+                    print(
+                        "Calling process_input(..., 'file')"
+                    )
+                    print("=" * 60 + "\n")
+
 
                     status_box.html(
-                        '<div class="mm-status">🤖 Generating AI insights...</div>'
+                        """
+                        <div class="mm-status">
+                            🎙️ Transcribing media...
+                        </div>
+                        """
                     )
 
-                    analysis = summarize_meeting(transcript)
+
+                    # Explicitly pass "file".
+                    transcript_path = process_input(
+                        input_path,
+                        "file"
+                    )
+
+
+                    with open(
+                        transcript_path,
+                        "r",
+                        encoding="utf-8"
+                    ) as file:
+
+                        transcript = file.read()
+
+
+                    status_box.html(
+                        """
+                        <div class="mm-status">
+                            🤖 Generating AI insights...
+                        </div>
+                        """
+                    )
+
+
+                    analysis = summarize_meeting(
+                        transcript
+                    )
+
 
                     session = _create_session(
                         title=uploaded_file.name,
                         source_type="file"
                     )
 
-                    session["transcript_path"] = transcript_path
-                    session["transcript"] = transcript
-                    session["analysis"] = analysis
-                    session["chat_history"] = []
-                    session["pdf_data"] = None
 
-                    status_box.html(
-                        '<div class="mm-status mm-status-done">✅ Analysis complete</div>'
+                    session["transcript_path"] = (
+                        transcript_path
                     )
 
+                    session["transcript"] = transcript
+
+                    session["analysis"] = analysis
+
+                    session["chat_history"] = []
+
+                    session["pdf_data"] = None
+
+
+                    status_box.html(
+                        """
+                        <div class="mm-status mm-status-done">
+                            ✅ Analysis complete
+                        </div>
+                        """
+                    )
+
+
                     st.rerun()
+
 
                 except Exception as error:
 
                     status_box.empty()
 
-                    if "429" in str(error):
+                    print("\n" + "=" * 60)
+                    print("MEETMIND FILE PROCESSING ERROR")
+                    print("=" * 60)
+                    print(
+                        type(error).__name__,
+                        ":",
+                        str(error)
+                    )
+                    print("=" * 60 + "\n")
+
+
+                    error_text = str(error)
+
+
+                    if "429" in error_text:
 
                         st.error(
                             "⚠️ AI service temporarily unavailable\n\n"
@@ -741,78 +976,174 @@ if not (current_session and current_session.get("transcript")):
                     else:
 
                         st.error(
-                            "⚠️ Something went wrong. Please try again."
+                            "⚠️ File processing failed."
                         )
 
-    # --------------------------------------------------------
-    # YOUTUBE URL
-    # --------------------------------------------------------
+                        # SHOW THE REAL ERROR.
+                        # This is temporary for debugging.
 
-    else:
+                        with st.expander(
+                            "🔧 Technical error details"
+                        ):
 
-        st.caption("Paste a YouTube URL")
+                            st.code(
+                                error_text
+                            )
+
+
+    # ========================================================
+    # YOUTUBE PATH
+    # ========================================================
+
+    elif st.session_state.input_mode == "YouTube URL":
+
+        st.caption(
+            "Paste a YouTube URL"
+        )
+
 
         youtube_url = st.text_input(
             "YouTube URL",
-            placeholder="https://www.youtube.com/watch?v=...",
-            label_visibility="collapsed"
+            placeholder=(
+                "https://www.youtube.com/watch?v=..."
+            ),
+            label_visibility="collapsed",
+            key="youtube_url_input"
         )
 
-        if youtube_url:
 
-            st.markdown('<div class="mm-primary-btn">', unsafe_allow_html=True)
-            process_clicked = st.button(
+        if youtube_url.strip():
+
+            st.markdown(
+                '<div class="mm-primary-btn">',
+                unsafe_allow_html=True
+            )
+
+            process_youtube_clicked = st.button(
                 "⚡ Process Media",
                 use_container_width=True,
                 key="process_youtube_btn"
             )
-            st.markdown('</div>', unsafe_allow_html=True)
 
-            if process_clicked:
+            st.markdown(
+                "</div>",
+                unsafe_allow_html=True
+            )
+
+
+            if process_youtube_clicked:
 
                 status_box = st.empty()
 
+
                 try:
 
+                    print("\n" + "=" * 60)
+                    print("MEETMIND YOUTUBE PROCESSING")
+                    print("=" * 60)
+                    print(
+                        "YouTube URL:",
+                        youtube_url
+                    )
+                    print(
+                        "Input mode:",
+                        st.session_state.input_mode
+                    )
+                    print(
+                        "Calling process_input(..., 'youtube')"
+                    )
+                    print("=" * 60 + "\n")
+
+
                     status_box.html(
-                        '<div class="mm-status">🎙️ Transcribing media...</div>'
+                        """
+                        <div class="mm-status">
+                            🎙️ Downloading and transcribing...
+                        </div>
+                        """
                     )
 
-                    transcript_path = process_input(youtube_url, "youtube")
+
+                    transcript_path = process_input(
+                        youtube_url.strip(),
+                        "youtube"
+                    )
+
 
                     with open(
-                        transcript_path, "r", encoding="utf-8"
+                        transcript_path,
+                        "r",
+                        encoding="utf-8"
                     ) as file:
+
                         transcript = file.read()
 
+
                     status_box.html(
-                        '<div class="mm-status">🤖 Generating AI insights...</div>'
+                        """
+                        <div class="mm-status">
+                            🤖 Generating AI insights...
+                        </div>
+                        """
                     )
 
-                    analysis = summarize_meeting(transcript)
+
+                    analysis = summarize_meeting(
+                        transcript
+                    )
+
 
                     session = _create_session(
                         title=youtube_url[:40],
                         source_type="youtube"
                     )
 
-                    session["transcript_path"] = transcript_path
-                    session["transcript"] = transcript
-                    session["analysis"] = analysis
-                    session["chat_history"] = []
-                    session["pdf_data"] = None
 
-                    status_box.html(
-                        '<div class="mm-status mm-status-done">✅ Analysis complete</div>'
+                    session["transcript_path"] = (
+                        transcript_path
                     )
 
+                    session["transcript"] = transcript
+
+                    session["analysis"] = analysis
+
+                    session["chat_history"] = []
+
+                    session["pdf_data"] = None
+
+
+                    status_box.html(
+                        """
+                        <div class="mm-status mm-status-done">
+                            ✅ Analysis complete
+                        </div>
+                        """
+                    )
+
+
                     st.rerun()
+
 
                 except Exception as error:
 
                     status_box.empty()
 
-                    if "429" in str(error):
+
+                    print("\n" + "=" * 60)
+                    print("MEETMIND YOUTUBE PROCESSING ERROR")
+                    print("=" * 60)
+                    print(
+                        type(error).__name__,
+                        ":",
+                        str(error)
+                    )
+                    print("=" * 60 + "\n")
+
+
+                    error_text = str(error)
+
+
+                    if "429" in error_text:
 
                         st.error(
                             "⚠️ AI service temporarily unavailable\n\n"
@@ -823,10 +1154,22 @@ if not (current_session and current_session.get("transcript")):
                     else:
 
                         st.error(
-                            "⚠️ Something went wrong. Please try again."
+                            "⚠️ YouTube processing failed."
                         )
 
-    st.markdown('</div>', unsafe_allow_html=True)
+                        with st.expander(
+                            "🔧 Technical error details"
+                        ):
+
+                            st.code(
+                                error_text
+                            )
+
+
+    st.markdown(
+        "</div>",
+        unsafe_allow_html=True
+    )
 
 
 # ============================================================
@@ -834,6 +1177,7 @@ if not (current_session and current_session.get("transcript")):
 # ============================================================
 
 current_session = _get_current_session()
+
 
 if current_session and current_session.get("transcript"):
 
@@ -846,13 +1190,19 @@ if current_session and current_session.get("transcript"):
         """
     )
 
+
     transcript_tab, analysis_tab, insights_tab = st.tabs(
-        ["📝 Transcript", "🤖 AI Analysis", "📊 Insights"]
+        [
+            "📝 Transcript",
+            "🤖 AI Analysis",
+            "📊 Insights"
+        ]
     )
 
-    # --------------------------------------------------------
-    # TRANSCRIPT TAB
-    # --------------------------------------------------------
+
+    # ========================================================
+    # TRANSCRIPT
+    # ========================================================
 
     with transcript_tab:
 
@@ -863,17 +1213,21 @@ if current_session and current_session.get("transcript"):
             label_visibility="collapsed"
         )
 
-    # --------------------------------------------------------
-    # ANALYSIS TAB
-    # --------------------------------------------------------
+
+    # ========================================================
+    # AI ANALYSIS
+    # ========================================================
 
     with analysis_tab:
 
-        st.markdown(current_session["analysis"])
+        st.markdown(
+            current_session["analysis"]
+        )
 
-    # --------------------------------------------------------
-    # INSIGHTS TAB
-    # --------------------------------------------------------
+
+    # ========================================================
+    # INSIGHTS
+    # ========================================================
 
     with insights_tab:
 
@@ -882,29 +1236,35 @@ if current_session and current_session.get("transcript"):
             ("💡", "Key Discussion Points"),
             ("ℹ️", "Important Information"),
             ("✅", "Decisions / Conclusions"),
-            ("🎯", "Action Items"),
+            ("🎯", "Action Items")
         ]
+
 
         for icon, label in sections:
 
             st.html(
                 f"""
                 <div class="insight-card">
-                    <div class="insight-card-title">{icon} {label}</div>
+                    <div class="insight-card-title">
+                        {icon} {label}
+                    </div>
                 </div>
                 """
             )
 
+
         st.caption(
-            "Full breakdown available in the 🤖 AI Analysis tab above."
+            "Full breakdown available in the "
+            "🤖 AI Analysis tab above."
         )
 
 
-    # ==========================================================
+    # ========================================================
     # PDF REPORT
-    # ==========================================================
+    # ========================================================
 
     st.divider()
+
 
     st.html(
         """
@@ -915,27 +1275,58 @@ if current_session and current_session.get("transcript"):
         """
     )
 
-    st.markdown('<div class="mm-card">', unsafe_allow_html=True)
 
-    st.markdown('<div class="mm-primary-btn">', unsafe_allow_html=True)
+    st.markdown(
+        '<div class="mm-card">',
+        unsafe_allow_html=True
+    )
+
+
+    st.markdown(
+        '<div class="mm-primary-btn">',
+        unsafe_allow_html=True
+    )
+
+
     generate_clicked = st.button(
         "📄 Generate PDF Report",
         use_container_width=True,
         key="generate_pdf_btn"
     )
-    st.markdown('</div>', unsafe_allow_html=True)
+
+
+    st.markdown(
+        "</div>",
+        unsafe_allow_html=True
+    )
+
 
     if generate_clicked:
 
-        pdf_path = "data/output/meetmind_report.pdf"
+        os.makedirs(
+            "data/output",
+            exist_ok=True
+        )
+
+
+        pdf_path = (
+            "data/output/meetmind_report.pdf"
+        )
+
 
         status_box = st.empty()
+
 
         try:
 
             status_box.html(
-                '<div class="mm-status">📄 Generating PDF report...</div>'
+                """
+                <div class="mm-status">
+                    📄 Generating PDF report...
+                </div>
+                """
             )
+
 
             create_pdf(
                 current_session["transcript"],
@@ -943,17 +1334,42 @@ if current_session and current_session.get("transcript"):
                 pdf_path
             )
 
-            with open(pdf_path, "rb") as pdf_file:
-                current_session["pdf_data"] = pdf_file.read()
+
+            with open(
+                pdf_path,
+                "rb"
+            ) as pdf_file:
+
+                current_session["pdf_data"] = (
+                    pdf_file.read()
+                )
+
 
             status_box.html(
-                '<div class="mm-status mm-status-done">✅ Analysis complete</div>'
+                """
+                <div class="mm-status mm-status-done">
+                    ✅ Report generated
+                </div>
+                """
             )
+
 
         except Exception as error:
 
             status_box.empty()
-            st.error("⚠️ Something went wrong generating the PDF.")
+
+            st.error(
+                "⚠️ Something went wrong generating the PDF."
+            )
+
+            with st.expander(
+                "🔧 Technical error details"
+            ):
+
+                st.code(
+                    str(error)
+                )
+
 
     if current_session.get("pdf_data"):
 
@@ -965,18 +1381,26 @@ if current_session and current_session.get("transcript"):
             use_container_width=True
         )
 
-    st.markdown('</div>', unsafe_allow_html=True)
+
+    st.markdown(
+        "</div>",
+        unsafe_allow_html=True
+    )
 
 
-    # ==========================================================
+    # ========================================================
     # RAG CHAT
-    # ==========================================================
+    # ========================================================
 
     st.divider()
 
+
     st.html(
         """
-        <div class="section-title">💬 Chat with Your Content</div>
+        <div class="section-title">
+            💬 Chat with Your Content
+        </div>
+
         <div class="section-description">
             Ask questions and retrieve answers directly from your
             processed content.
@@ -984,24 +1408,47 @@ if current_session and current_session.get("transcript"):
         """
     )
 
-    # ----------------------------------------------------------
+
+    # ========================================================
     # CHAT HISTORY
-    # ----------------------------------------------------------
+    # ========================================================
 
     for message in current_session["chat_history"]:
 
-        with st.chat_message(message["role"]):
+        with st.chat_message(
+            message["role"]
+        ):
 
-            st.write(message["content"])
+            st.write(
+                message["content"]
+            )
 
-            if message["role"] == "assistant" and "sources" in message:
 
-                num_sources = len(message.get("sources", []))
+            if (
+                message["role"] == "assistant"
+                and "sources" in message
+            ):
 
-                with st.expander(f"📚 {num_sources} Sources"):
+                num_sources = len(
+                    message.get(
+                        "sources",
+                        []
+                    )
+                )
 
-                    for i, (source, metadata) in enumerate(
-                        zip(message["sources"], message["metadatas"]),
+
+                with st.expander(
+                    f"📚 {num_sources} Sources"
+                ):
+
+                    for i, (
+                        source,
+                        metadata
+                    ) in enumerate(
+                        zip(
+                            message["sources"],
+                            message["metadatas"]
+                        ),
                         start=1
                     ):
 
@@ -1011,40 +1458,67 @@ if current_session and current_session.get("transcript"):
                             f"{metadata['end_time']}**"
                         )
 
-                        st.write(source)
+                        st.write(
+                            source
+                        )
 
-    # ----------------------------------------------------------
+
+    # ========================================================
     # CHAT INPUT
-    # ----------------------------------------------------------
+    # ========================================================
 
-    question = st.chat_input("Ask anything about your content...")
+    question = st.chat_input(
+        "Ask anything about your content..."
+    )
+
 
     if question:
 
         with st.chat_message("user"):
+
             st.write(question)
 
+
         current_session["chat_history"].append(
-            {"role": "user", "content": question}
+            {
+                "role": "user",
+                "content": question
+            }
         )
+
 
         with st.chat_message("assistant"):
 
             try:
 
-                with st.spinner("🔎 Searching your content..."):
+                with st.spinner(
+                    "🔎 Searching your content..."
+                ):
 
-                    answer, sources, metadatas = answer_question(
-                        question,
-                        current_session["chat_history"]
+                    answer, sources, metadatas = (
+                        answer_question(
+                            question,
+                            current_session["chat_history"]
+                        )
                     )
+
 
                 st.write(answer)
 
-                with st.expander(f"📚 {len(sources)} Sources"):
 
-                    for i, (source, metadata) in enumerate(
-                        zip(sources, metadatas), start=1
+                with st.expander(
+                    f"📚 {len(sources)} Sources"
+                ):
+
+                    for i, (
+                        source,
+                        metadata
+                    ) in enumerate(
+                        zip(
+                            sources,
+                            metadatas
+                        ),
+                        start=1
                     ):
 
                         st.markdown(
@@ -1053,7 +1527,10 @@ if current_session and current_session.get("transcript"):
                             f"{metadata['end_time']}**"
                         )
 
-                        st.write(source)
+                        st.write(
+                            source
+                        )
+
 
                 current_session["chat_history"].append(
                     {
@@ -1064,9 +1541,13 @@ if current_session and current_session.get("transcript"):
                     }
                 )
 
+
             except Exception as error:
 
-                if "429" in str(error):
+                error_text = str(error)
+
+
+                if "429" in error_text:
 
                     st.error(
                         "⚠️ AI service temporarily unavailable\n\n"
@@ -1074,11 +1555,20 @@ if current_session and current_session.get("transcript"):
                         "Please try again after the quota resets."
                     )
 
+
                 else:
 
                     st.error(
-                        "⚠️ Something went wrong. Please try again."
+                        "⚠️ Something went wrong."
                     )
+
+                    with st.expander(
+                        "🔧 Technical error details"
+                    ):
+
+                        st.code(
+                            error_text
+                        )
 
 
 # ============================================================
