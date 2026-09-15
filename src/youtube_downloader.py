@@ -1,21 +1,12 @@
 import os
 import uuid
-import shutil
+
 import yt_dlp
 
 
 def download_youtube_video(url):
 
-    print("========== YOUTUBE DIAGNOSTIC ==========")
-    print("yt-dlp version:", yt_dlp.version.__version__)
-    print("Deno path:", shutil.which("deno"))
-
-    if shutil.which("deno"):
-        print("Deno detected successfully!")
-    else:
-        print("Deno NOT detected!")
-
-    print("========================================")
+    
 
     os.makedirs("data/input", exist_ok=True)
 

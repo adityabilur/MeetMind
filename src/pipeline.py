@@ -1,6 +1,6 @@
 import os
 
-from src.youtube_downloader import download_youtube_video
+from src.youtube_transcript import get_youtube_transcript
 from src.transcription import transcribe_audio
 from src.chunking import chunk_transcript
 from src.vector_store import clear_collection, add_documents
@@ -9,15 +9,29 @@ from src.vector_store import clear_collection, add_documents
 def process_input(input_value, input_type):
 
     # -----------------------------
-    # Step 1: Get the audio/media
+    # Step 1: Get the transcript
     # -----------------------------
+
     os.makedirs("data/input", exist_ok=True)
     os.makedirs("data/output", exist_ok=True)
+
     if input_type == "youtube":
 
-        print("Downloading YouTube audio...")
+        print("Fetching YouTube transcript...")
 
-        audio_path = download_youtube_video(input_value)
+        transcript = get_youtube_transcript(input_value)
+
+        transcript_path = "data/output/transcript.txt"
+
+        with open(
+            transcript_path,
+            "w",
+            encoding="utf-8"
+        ) as file:
+            file.write(transcript)
+
+        print("YouTube transcript fetched successfully!")
+
     elif input_type == "file":
 
         audio_path = input_value
@@ -27,37 +41,37 @@ def process_input(input_value, input_type):
                 f"File not found: {audio_path}"
             )
 
+        # -----------------------------
+        # Step 2: Transcribe local file
+        # -----------------------------
+
+        transcript_path = "data/output/transcript.txt"
+
+        print("Starting transcription...")
+
+        transcribe_audio(
+            audio_path,
+            transcript_path
+        )
+
+        print("Transcription completed!")
+
+        # -----------------------------
+        # Step 3: Read transcript
+        # -----------------------------
+
+        with open(
+            transcript_path,
+            "r",
+            encoding="utf-8"
+        ) as file:
+            transcript = file.read()
+
     else:
 
         raise ValueError(
             "input_type must be 'youtube' or 'file'"
         )
-
-    # -----------------------------
-    # Step 2: Transcribe
-    # -----------------------------
-
-    transcript_path = "data/output/transcript.txt"
-
-    print("Starting transcription...")
-
-    transcribe_audio(
-        audio_path,
-        transcript_path
-    )
-
-    print("Transcription completed!")
-
-    # -----------------------------
-    # Step 3: Read transcript
-    # -----------------------------
-
-    with open(
-        transcript_path,
-        "r",
-        encoding="utf-8"
-    ) as file:
-        transcript = file.read()
 
     # -----------------------------
     # Step 4: Create chunks
