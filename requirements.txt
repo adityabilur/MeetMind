@@ -1,6 +1,6 @@
 streamlit
 openai-whisper
-yt-dlp
+yt-dlp[default]
 google-genai
 python-dotenv
 chromadb
