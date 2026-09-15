@@ -16,10 +16,7 @@ def process_input(input_value, input_type):
 
         print("Downloading YouTube audio...")
 
-        download_youtube_video(input_value)
-
-        audio_path = "data/input/youtube_audio.m4a"
-
+        audio_path = download_youtube_video(input_value)
     elif input_type == "file":
 
         audio_path = input_value
