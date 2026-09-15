@@ -6,9 +6,9 @@ def download_youtube_video(url):
     output_path = "data/input/youtube_audio.%(ext)s"
 
     options = {
-        "format": "140",
+        "format": "bestaudio/best",
         "outtmpl": output_path,
-        "noplaylist": True
+        "noplaylist": True,
     }
 
     with yt_dlp.YoutubeDL(options) as ydl:
